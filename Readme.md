@@ -4,9 +4,8 @@ Unofficial and Incomplete Plivo HTTP API Helper Library in Go
 
 ## Implemented API
     Account
-        get Account Detail
-    Call
-        make call
+    Endpoint
+    Application
 
 ## Example
 
@@ -21,18 +20,12 @@ func main() {
 	authId := "AAAA"
 	authToken := "BBBBBB"
 
-	c, _ := plivogo.NewClient(AUTH_ID, AUTH_TOKEN)
+	p, _ := plivogo.NewPlivo(AUTH_ID, AUTH_TOKEN)
 
-    //get Account detail
-	c.Account.Get()
+    //get endpoint details
+	endpoint, _ := p.Endpoint.Get("your_endpoint_id")
 	
-    //make a call
-	p, _ := plivogo.NewParams()
-	p.Set("to", "sip:ch1303@phone.plivo.com")
-	p.Set("caller_name", "Somenone")
-	p.Set("from", "12345678901")
-	p.Set("answer_url", "http://my.web.com/123.xml")
-	p.Set("answer_method", "GET")
-	c.Call.Call(p.Dumps())
 }
 ```
+
+You can also take a look at test files
