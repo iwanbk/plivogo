@@ -1,22 +1,15 @@
 package plivogo
 
-import (
-	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"strings"
-)
-
 var (
 	API_URL = "https://api.plivo.com/v1/Account/"
 )
 
 type Plivo struct {
-	authId    string
-	authToken string
-	Account   *AccountClient
-	Endpoint  *EndpointClient
+	authId      string
+	authToken   string
+	Account     *accountClient
+	Application *applicationClient
+	Endpoint    *endpointClient
 }
 
 func NewPlivo(authId, authToken string) *Plivo {
@@ -24,8 +17,17 @@ func NewPlivo(authId, authToken string) *Plivo {
 	p.authId = authId
 	p.authToken = authToken
 	p.Account = NewAccountClient(authId, authToken)
+	p.Application = NewApplicationClient(authId, authToken)
 	p.Endpoint = NewEndpointClient(authId, authToken)
 	return p
+}
+
+type ResourceMeta struct {
+	Previous   int `json:"previous"`
+	TotalCount int `json:"total_count"`
+	Offset     int `json:"offset"`
+	Limit      int `json:"limit"`
+	Next       int `json:"next"`
 }
 
 type Call struct {
@@ -42,58 +44,6 @@ func NewCall(authId, authToken string) *Call {
 	return c
 }
 
-func (c *Call) Call(params string) (string, error) {
-	return doPost(c.authId, c.authToken, c.path, params)
-}
-
-func doGet(authId, authToken, path, data string) (string, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", API_URL+authId+path, nil)
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-	req.SetBasicAuth(authId, authToken)
-
-	resp, err := client.Do(req)
-	defer resp.Body.Close()
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-
-	contents, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-	fmt.Printf("%s\n", string(contents))
-	return string(contents), nil
-}
-
-func doPost(authId, authToken, path, data string) (string, error) {
-	client := &http.Client{}
-
-	req, err := http.NewRequest("POST", API_URL+authId+path, strings.NewReader(data))
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-
-	req.Header.Add("content-type", "application/json")
-	req.SetBasicAuth(authId, authToken)
-
-	resp, err := client.Do(req)
-	defer resp.Body.Close()
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-	contents, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-	fmt.Printf("%s\n", string(contents))
-	return string(contents), nil
-}
+//func (c *Call) Call(params string) (string, error) {
+//	return doPost(c.authId, c.authToken, c.path, params)
+//}
