@@ -2,6 +2,7 @@ package plivogo
 
 import (
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,6 +12,93 @@ import (
 type ApiError struct {
 	StatusCode int
 	RawError   string
+}
+
+type httpClient struct {
+	authID    string
+	authToken string
+	client    *http.Client
+}
+
+func newHttpClient(authID, authToken string) *httpClient {
+	h := &httpClient{
+		authID:    authID,
+		authToken: authToken,
+		client:    http.DefaultClient,
+	}
+	return h
+}
+
+func (h *httpClient) Get(url string, v interface{}) (*Response, error) {
+	log.Printf("doing GET request to :%s\n", url)
+	//create request object
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	//set auth
+	req.SetBasicAuth(h.authID, h.authToken)
+
+	//do request
+	resp, err := h.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	response := &Response{Response: resp}
+
+	//read response
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return response, err
+	}
+	response.Raw = b
+
+	//decode response
+	err = json.Unmarshal(b, &v)
+	if err != nil {
+		return response, err
+	}
+
+	return response, nil
+}
+
+func (h *httpClient) Post(url string, body io.Reader, v interface{}) (*Response, error) {
+	//create request object
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("content-type", "application/json")
+	//set auth
+	req.SetBasicAuth(h.authID, h.authToken)
+
+	//do request
+	resp, err := h.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	response := &Response{Response: resp}
+
+	//read response
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return response, err
+	}
+	response.Raw = b
+
+	//decode response
+	err = json.Unmarshal(b, &v)
+	if err != nil {
+		return response, err
+	}
+
+	return response, nil
 }
 
 func (e ApiError) Error() string {
@@ -76,6 +164,7 @@ func postdelete(method string, authId, authToken, path, data string) (int, strin
 		log.Println(err)
 		return -1, "", err
 	}
+	log.Printf("contents = %s\n", string(contents))
 	return resp.StatusCode, string(contents), nil
 }
 

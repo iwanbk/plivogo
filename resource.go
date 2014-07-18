@@ -26,5 +26,6 @@ func (r *Resource) GetString(key string) (string, error) {
 }
 
 func (r *Resource) GetBool(key string) (bool, error) {
-	return r.jsObj.Get(key).MustBool(), nil
+	return true, nil
+	//return r.jsObj.Get(key).MustBool(), nil
 }

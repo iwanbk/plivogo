@@ -1,40 +1,65 @@
 package plivogo
 
-type accountClient struct {
-	authId    string
-	authToken string
-	basePath  string
-}
+import (
+	"fmt"
+	"net/http"
+)
 
-func NewAccountClient(authId, authToken string) *accountClient {
-	a := new(accountClient)
-	a.authId = authId
-	a.authToken = authToken
-	a.basePath = "/"
-	return a
+const (
+	accountBasePath = ""
+)
+
+//AccountService handles communication with Plivo Account API
+//
+//See : https://www.plivo.com/docs/api/account/
+type AccountService struct {
+	client *Client
 }
 
 type Account struct {
-	AuthId       string `json:"auth_id"`
-	Type         string `json:"account_type"`
-	Address      string `json:"address"`
-	AutoRecharge bool   `json:"auto_recharge"`
-	BillingMode  string `json:"billing_mode"`
-	CashCredit   string `json:"cash_credit"`
-	City         string `json:"city"`
-	Name         string `json:"name"`
-	State        string `json:"state"`
-	Timezone     string `json:"timezone"`
+	AuthId       string `json:"auth_id,omitempty"`
+	Type         string `json:"account_type,omitempty"`
+	Address      string `json:"address,omitempty"`
+	AutoRecharge bool   `json:"auto_recharge,omitempty"`
+	BillingMode  string `json:"billing_mode,omitempty"`
+	CashCredit   string `json:"cash_credits,omitempty"`
+	City         string `json:"city,omitempty"`
+	Name         string `json:"name,omitempty"`
+	State        string `json:"state,omitempty"`
+	Timezone     string `json:"timezone,omitempty"`
+
+	//other fields
+	ApiID       string `json:"api_id"`
+	ResourceURI string `json:"resource_uri"`
 }
 
 //Get account resource
-func (ac *accountClient) Get() (*Account, error) {
-	a := Account{}
-	err := getExpectUnmarshal(ac.authId, ac.authToken, ac.basePath, "{}", &a, 200)
-	return &a, err
+func (a *AccountService) Get() (*Account, *Response, error) {
+	var ac Account
+
+	resp, err := a.client.Get(accountBasePath, &ac)
+
+	if err != nil {
+		return nil, nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp, fmt.Errorf("invalid status code:%d", resp.StatusCode)
+	}
+	return &ac, resp, nil
 }
 
-//Modify account
-func (ac *accountClient) Modify(params *Params) error {
-	return postExpectUnmarshal(ac.authId, ac.authToken, ac.basePath, params.Dumps(), nil, 202)
+func (as *AccountService) Modify(params map[string]interface{}) (*GenericResponse, *Response, error) {
+	var gr GenericResponse
+
+	//do POST
+	resp, err := as.client.Post(accountBasePath, params, &gr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if resp.StatusCode != http.StatusAccepted {
+		return nil, resp, fmt.Errorf("invalid status code : %d", resp.StatusCode)
+	}
+
+	return &gr, resp, nil
 }
